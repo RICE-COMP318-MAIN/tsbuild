@@ -1,0 +1,40 @@
+{
+  "name": "build318",
+  "version": "0.2.0",
+  "description": "Build tool for COMP 318 TypeScript projects.",
+  "keywords": ["esbuild", "COMP 318"],
+  "homepage": "https://github.com/RICE-COMP318-MAIN/build318#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RICE-COMP318-MAIN/build318.git"
+  },
+  "license": "BSD-3-Clause",
+  "author": "Scott Rixner",
+  "bin": {
+    "build318": "dist/build318"
+  },
+  "exports": {
+    ".": "./dist/loadenv.js"
+  },
+  "types": "dist/loadenv.d.ts",
+  "scripts": {
+    "build": "node scripts/build.mts",
+    "check": "tsc && biome check --write src/ scripts/ *.json",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/istanbul-lib-instrument": "^1.7.7",
+    "@types/mime": "^3.0.4",
+    "@types/node": "^24.0.1",
+    "commander": "^14.0.0",
+    "mime": "^4.0.7",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "dotenv": "^16.5.0",
+    "esbuild": "^0.25.5",
+    "istanbul-lib-instrument": "^6.0.3"
+  }
+}
