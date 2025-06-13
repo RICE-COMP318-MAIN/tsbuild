@@ -1,0 +1,47 @@
+{
+    "name": "tsbuild",
+    "version": "0.1.0",
+    "description": "Build tool for COMP 318 TypeScript projects.",
+    "keywords": [
+        "esbuild",
+        "COMP 318"
+    ],
+    "homepage": "https://github.com/RICE-COMP318-MAIN/tsbuild#readme",
+    "bugs": {
+        "url": "https://github.com/RICE-COMP318-MAIN/tsbuild/issues"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/RICE-COMP318-MAIN/tsbuild.git"
+    },
+    "license": "BSD-3-Clause",
+    "author": "Scott Rixner",
+    "bin": {
+        "tsbuild": "dist/tsbuild"
+    },
+    "exports": {
+        ".": "./dist/loadenv.js"
+    },
+    "types": "dist/tsbuild.d.ts",
+    "scripts": {
+        "prebuild": "rimraf dist",
+        "build": "node scripts/build.mjs",
+        "check": "tsc && biome check --write src/",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "devDependencies": {
+        "@babel/preset-typescript": "^7.27.1",
+        "@biomejs/biome": "^1.9.4",
+        "@types/istanbul-lib-instrument": "^1.7.7",
+        "@types/node": "^24.0.1",
+        "rimraf": "^6.0.1",
+        "typescript": "^5.8.3"
+    },
+    "dependencies": {
+        "ajv": "^8.17.1",
+        "chokidar": "^4.0.3",
+        "dotenv": "^16.5.0",
+        "esbuild": "^0.25.5",
+        "istanbul-lib-instrument": "^6.0.3"
+    }
+}

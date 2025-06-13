@@ -1,0 +1,314 @@
+#!/usr/bin/env node
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// src/build.ts
+var import_node_fs3 = require("node:fs");
+var import_promises2 = require("node:fs/promises");
+var import_esbuild2 = require("esbuild");
+var import_node_path4 = require("node:path");
+
+// src/copyfiles.ts
+var import_node_fs = require("node:fs");
+var import_node_path = require("node:path");
+var import_chokidar = __toESM(require("chokidar"));
+var tsbuildDir = (0, import_node_path.resolve)(process.cwd(), ".tsbuild");
+if (!(0, import_node_fs.existsSync)(tsbuildDir)) {
+  (0, import_node_fs.mkdirSync)(tsbuildDir, { recursive: true });
+}
+var triggerFile = (0, import_node_path.join)(tsbuildDir, "trigger.ts");
+var injectedImport = `import "${triggerFile}";
+
+`;
+async function copyFileWithDirs(src, dest) {
+  await import_node_fs.promises.mkdir((0, import_node_path.dirname)(dest), { recursive: true });
+  await import_node_fs.promises.copyFile(src, dest);
+}
+async function getAllFiles(dir) {
+  const entries = await import_node_fs.promises.readdir(dir, {
+    withFileTypes: true
+  });
+  const files = await Promise.all(
+    entries.map((entry) => {
+      const fullPath = (0, import_node_path.join)(dir, entry.name);
+      return entry.isDirectory() ? getAllFiles(fullPath) : Promise.resolve(fullPath);
+    })
+  );
+  return files.flat();
+}
+function replaceInFile(filePath, searchRegex, replacement) {
+  const absolutePath = (0, import_node_path.resolve)(filePath);
+  const fileContent = (0, import_node_fs.readFileSync)(absolutePath, "utf8");
+  const updatedContent = fileContent.replace(searchRegex, replacement);
+  (0, import_node_fs.writeFileSync)(absolutePath, updatedContent, "utf8");
+}
+function AssetCopierPlugin(copyPairs, watchFiles = false) {
+  let watchSetup = false;
+  return {
+    name: "static-asset-copier",
+    setup(build2) {
+      const root = process.cwd();
+      const resolvedPairs = copyPairs.map(
+        (pair) => {
+          if (pair.from === "")
+            throw new Error(
+              '[static-asset-copier] Each entry must have a "from" property.'
+            );
+          if (pair.to === "")
+            throw new Error(
+              '[static-asset-copier] Each entry must have a "to" property.'
+            );
+          const srcDir = (0, import_node_path.resolve)(root, pair.from);
+          const destDir = (0, import_node_path.resolve)(root, pair.to);
+          return { from: srcDir, to: destDir };
+        }
+      );
+      async function copyAllAssets() {
+        for (const pair of resolvedPairs) {
+          const files = await getAllFiles(pair.from);
+          await Promise.all(
+            files.map((file) => {
+              const rel = (0, import_node_path.relative)(pair.from, file);
+              const destPath = (0, import_node_path.join)(pair.to, rel);
+              return copyFileWithDirs(file, destPath);
+            })
+          );
+        }
+      }
+      if (watchFiles) {
+        (0, import_node_fs.writeFileSync)(
+          triggerFile,
+          `console.log("Updated at: ${Date.now()}");
+`,
+          "utf8"
+        );
+        build2.onLoad(
+          { filter: /main.ts/ },
+          async (args) => {
+            const source = await import_node_fs.promises.readFile(args.path, "utf8");
+            return {
+              contents: injectedImport + source,
+              loader: "ts"
+            };
+          }
+        );
+      }
+      build2.onStart(copyAllAssets);
+      build2.onEnd(() => {
+        if (watchFiles && !watchSetup) {
+          watchSetup = true;
+          for (const pair of resolvedPairs) {
+            console.log(
+              "[static-asset-copier] Watching for changes in:",
+              pair.from
+            );
+            const watcher = import_chokidar.default.watch(pair.from, {
+              persistent: true,
+              ignoreInitial: true
+            });
+            watcher.on(
+              "all",
+              async (event, path2) => {
+                if (event === "unlink" || event === "unlinkDir") return;
+                const relativePath = (0, import_node_path.relative)(pair.from, path2);
+                const destFile = (0, import_node_path.join)(pair.to, relativePath);
+                try {
+                  await copyFileWithDirs(path2, destFile);
+                  console.log(`[static-asset-copier] Updated: ${relativePath}`);
+                  replaceInFile(
+                    triggerFile,
+                    /console\.log\("Updated at: [0-9]+"\);/,
+                    `console.log("Updated at: ${Date.now()}");`
+                  );
+                } catch (err) {
+                  console.warn(
+                    `[static-asset-copier] Failed to copy ${relativePath}:`,
+                    err
+                  );
+                }
+              }
+            );
+          }
+        }
+      });
+    }
+  };
+}
+
+// src/instrument.ts
+var import_promises = require("node:fs/promises");
+var import_node_path2 = __toESM(require("node:path"));
+var import_esbuild = require("esbuild");
+var import_istanbul_lib_instrument = require("istanbul-lib-instrument");
+var IstanbulPlugin = {
+  name: "istanbul-instrumenter",
+  setup(build2) {
+    build2.onLoad(
+      { filter: /\.[cm]?ts$/ },
+      async (args) => {
+        if (args.path.includes("node_modules")) return;
+        const tsSource = await (0, import_promises.readFile)(args.path, "utf8");
+        const jsTransformed = await (0, import_esbuild.transform)(tsSource, {
+          loader: "ts",
+          sourcemap: true,
+          sourcefile: args.path
+        });
+        const instrumenter = (0, import_istanbul_lib_instrument.createInstrumenter)({
+          esModules: true,
+          produceSourceMap: true
+        });
+        const instrumentedCode = instrumenter.instrumentSync(
+          jsTransformed.code,
+          args.path,
+          JSON.parse(jsTransformed.map)
+        );
+        const finalMap = instrumenter.lastSourceMap();
+        const base64Map = Buffer.from(JSON.stringify(finalMap)).toString(
+          "base64"
+        );
+        const inlineSourceMap = `//# sourceMappingURL=data:application/json;base64,${base64Map}`;
+        const finalCode = `${instrumentedCode}
+${inlineSourceMap}`;
+        return {
+          contents: finalCode,
+          loader: "js",
+          resolveDir: import_node_path2.default.dirname(args.path)
+        };
+      }
+    );
+  }
+};
+
+// src/loadenv.ts
+var import_node_fs2 = require("node:fs");
+var import_node_path3 = require("node:path");
+var import_dotenv = __toESM(require("dotenv"));
+var envFiles = [".env.local", ".env"];
+function loadEnv() {
+  envFiles.forEach((file) => {
+    const fullPath = (0, import_node_path3.resolve)(file);
+    if ((0, import_node_fs2.existsSync)(fullPath)) {
+      import_dotenv.default.config({ path: file });
+    }
+  });
+}
+
+// src/build.ts
+var import_ajv = __toESM(require("ajv"));
+var distDir = "dist";
+var configFile = "tsbuild.json";
+var validModes = ["build", "serve", "profile"];
+function isValidMode(mode) {
+  return validModes.includes(mode);
+}
+var liveReload = (0, import_node_path4.resolve)(__dirname, "livereload.ts");
+var schemaFile = (0, import_node_path4.resolve)(__dirname, "schema.json");
+async function loadConfig() {
+  const ajv = new import_ajv.default();
+  const schema = JSON.parse(await (0, import_promises2.readFile)(schemaFile, "utf-8"));
+  const validate = ajv.compile(schema);
+  const fullPath = (0, import_node_path4.resolve)(process.cwd(), configFile);
+  if ((0, import_node_fs3.existsSync)(fullPath)) {
+    const config = JSON.parse(await (0, import_promises2.readFile)(fullPath, "utf8"));
+    if (!validate(config)) {
+      throw new Error(
+        `Configuration file ${configFile} is invalid: ${ajv.errorsText(
+          validate.errors
+        )}`
+      );
+    }
+    return config;
+  }
+  throw new Error(`Configuration file ${configFile} not found.`);
+}
+async function run() {
+  if (process.argv.length > 3) {
+    console.error("Usage: build [<mode>]");
+    process.exit(1);
+  }
+  const mode = process.argv[2] || "build";
+  if (!isValidMode(mode)) {
+    console.error(
+      `Invalid mode: ${mode}. Valid modes are: ${validModes.join(", ")}`
+    );
+    process.exit(1);
+  }
+  const config = await loadConfig();
+  if ((0, import_node_fs3.existsSync)(distDir)) {
+    await (0, import_promises2.rm)(distDir, { recursive: true, force: true });
+  }
+  await (0, import_promises2.mkdir)(distDir, { recursive: true });
+  loadEnv();
+  const define = {
+    "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
+    "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
+    "process.env.AUTH_PATH": `"${process.env.AUTH_PATH}"`,
+    "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`
+  };
+  const baseConfig = {
+    entryPoints: [config.entry],
+    bundle: true,
+    sourcemap: "inline",
+    outfile: config.output,
+    define
+  };
+  const copierPlugin = AssetCopierPlugin(
+    config.copy || [],
+    mode === "serve"
+  );
+  switch (mode) {
+    case "build": {
+      await (0, import_esbuild2.build)({
+        ...baseConfig,
+        plugins: [copierPlugin]
+      });
+      console.log("Build complete");
+      break;
+    }
+    case "serve": {
+      const ctx = await (0, import_esbuild2.context)({
+        ...baseConfig,
+        inject: [liveReload],
+        plugins: [copierPlugin]
+      });
+      await ctx.watch();
+      await ctx.serve({ servedir: "dist", port: 1234 });
+      console.log("Serving (and watching) app on http://localhost:1234");
+      break;
+    }
+    case "profile": {
+      const ctx = await (0, import_esbuild2.context)({
+        ...baseConfig,
+        plugins: [IstanbulPlugin, copierPlugin]
+      });
+      await ctx.serve({ servedir: "dist", port: 1234 });
+      console.log("Serving profiled app on http://localhost:1234");
+      break;
+    }
+  }
+}
+run().catch((error) => {
+  console.error("Build failed:", error);
+  process.exit(1);
+});
