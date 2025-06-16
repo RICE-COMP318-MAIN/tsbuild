@@ -116,6 +116,16 @@ async function builder(options: OptionsType): Promise<void> {
       break;
     }
     case "profile": {
+      // Need to remove previous profiling information
+      const nycDir = resolve(process.cwd(), ".nyc_output");
+      if (existsSync(nycDir)) {
+        await rm(nycDir, { recursive: true, force: true });
+      }
+      const covDir = resolve(process.cwd(), "coverage");
+      if (existsSync(covDir)) {
+        await rm(covDir, { recursive: true, force: true });
+      }
+
       // Don't need live reload, just use esbuild's server.
       await copyAllAssets(resolvedCopyPairs);
       const ctx: BuildContext = await context({
