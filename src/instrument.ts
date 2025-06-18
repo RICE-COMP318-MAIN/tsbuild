@@ -8,7 +8,7 @@ import {
   type TransformResult,
   transform,
 } from "esbuild";
-import { type Instrumenter, createInstrumenter } from "istanbul-lib-instrument";
+import { createInstrumenter, type Instrumenter } from "istanbul-lib-instrument";
 
 /**
  * An esbuild plugin to instrument TypeScript files for code coverage.
