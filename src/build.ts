@@ -85,6 +85,13 @@ async function builder(options: OptionsType): Promise<void> {
     "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`,
   };
 
+  // Also add all environment variables that start with COMP318_
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("COMP318_")) {
+      define[`process.env.${key}`] = `"${value}"`;
+    }
+  }
+
   // Base esbuild configuration
   const baseConfig: BuildOptions = {
     entryPoints: [options.entry],

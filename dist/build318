@@ -4864,6 +4864,11 @@ async function builder(options) {
     "process.env.AUTH_PATH": `"${process.env.AUTH_PATH}"`,
     "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`
   };
+  for (const [key, value] of Object.entries(process.env)) {
+    if (key.startsWith("COMP318_")) {
+      define[`process.env.${key}`] = `"${value}"`;
+    }
+  }
   const baseConfig = {
     entryPoints: [options.entry],
     bundle: true,
