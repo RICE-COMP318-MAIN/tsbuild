@@ -70,6 +70,8 @@ export function resolvePairs(
 }
 
 async function builder(options: OptionsType): Promise<void> {
+  console.log(`Building: ${options}`);
+
   // Remove the dist directory
   if (existsSync(options.dist)) {
     await rm(options.dist, { recursive: true, force: true });
@@ -79,12 +81,7 @@ async function builder(options: OptionsType): Promise<void> {
   await mkdir(options.dist, { recursive: true });
 
   // Setup environment variables
-  if (options.testing) {
-    // Load test environment variables.
-    loadEnv(true);
-  } else {
-    loadEnv();
-  }
+  loadEnv(options.testing);
 
   const define: Record<string, string> = {
     "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,

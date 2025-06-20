@@ -4863,15 +4863,12 @@ function resolvePairs(copyPairs, cwd, dist) {
   });
 }
 async function builder(options) {
+  console.log(`Building: ${options}`);
   if ((0, import_node_fs3.existsSync)(options.dist)) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }
   await (0, import_promises3.mkdir)(options.dist, { recursive: true });
-  if (options.testing) {
-    loadEnv(true);
-  } else {
-    loadEnv();
-  }
+  loadEnv(options.testing);
   const define = {
     "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
     "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
