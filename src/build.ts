@@ -77,7 +77,13 @@ async function builder(options: OptionsType): Promise<void> {
   await mkdir(options.dist, { recursive: true });
 
   // Setup environment variables
-  loadEnv();
+  if (options.mode === "profile") {
+    // Load test environment when profiling.
+    loadEnv(true);
+  } else {
+    loadEnv();
+  }
+
   const define: Record<string, string> = {
     "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
     "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
