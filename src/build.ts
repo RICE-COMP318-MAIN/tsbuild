@@ -40,7 +40,7 @@ type OptionsType = {
   dist: string; // Output directory for the build
   entry: string; // Entry file for the application
   output: string; // Output file (relative to output directory)
-  test?: boolean; // Whether to run in test mode (loads test environment)
+  testing: boolean; // Whether to run in test mode (loads test environment)
   copy?: Array<CopyPair>; // Array of copy pairs for static assets
 };
 
@@ -50,6 +50,7 @@ const defaultOptions: OptionsType = {
   dist: "dist", // Default output directory
   entry: "src/main.ts", // Default entry file
   output: "main.js", // Default output file
+  testing: false, // Default to not running in test mode
 };
 
 const copyRegex = /^[^:]+:[^:]*$/;
@@ -78,7 +79,7 @@ async function builder(options: OptionsType): Promise<void> {
   await mkdir(options.dist, { recursive: true });
 
   // Setup environment variables
-  if (options.test) {
+  if (options.testing) {
     // Load test environment variables.
     loadEnv(true);
   } else {

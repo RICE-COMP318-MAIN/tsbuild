@@ -4847,8 +4847,10 @@ var defaultOptions = {
   // Default output directory
   entry: "src/main.ts",
   // Default entry file
-  output: "main.js"
+  output: "main.js",
   // Default output file
+  testing: false
+  // Default to not running in test mode
 };
 var copyRegex = /^[^:]+:[^:]*$/;
 function resolvePairs(copyPairs, cwd, dist) {
@@ -4865,7 +4867,7 @@ async function builder(options) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }
   await (0, import_promises3.mkdir)(options.dist, { recursive: true });
-  if (options.test) {
+  if (options.testing) {
     loadEnv(true);
   } else {
     loadEnv();
