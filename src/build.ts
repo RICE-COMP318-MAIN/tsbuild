@@ -13,9 +13,7 @@
  * output directory management. It uses esbuild plugins for asset copying and
  * code coverage instrumentation, and supports live reload during development.
  *
- * Usage: node build.ts [<mode>]
- *
- * Where `<mode>` is one of: "build", "serve", or "profile".
+ * Use -h or --help to see the available options.
  */
 import { existsSync } from "node:fs";
 import { mkdir, rm } from "node:fs/promises";
@@ -34,6 +32,7 @@ import { serve } from "./serve";
 const validModes = ["build", "serve", "profile"] as const;
 type BuildMode = (typeof validModes)[number];
 
+// Command line options.
 type OptionsType = {
   mode: BuildMode; // Mode of operation
   port: number; // Port for serving the application
@@ -44,6 +43,7 @@ type OptionsType = {
   copy?: Array<CopyPair>; // Array of copy pairs for static assets
 };
 
+// Default options.
 const defaultOptions: OptionsType = {
   mode: "build", // Default mode
   port: 1234, // Default port for serving
@@ -53,9 +53,19 @@ const defaultOptions: OptionsType = {
   testing: false, // Default to not running in test mode
 };
 
+// Copy pair regex to validate the format "from:to".
 const copyRegex = /^[^:]+:[^:]*$/;
 
-export function resolvePairs(
+/**
+ * Resolves the paths in the copy pairs relative to the current working
+ * directory and the distribution directory.
+ *
+ * @param copyPairs - Array of copy pairs with "from" and "to" properties.
+ * @param cwd - Current working directory.
+ * @param dist - Distribution directory.
+ * @returns Array of resolved copy pairs with absolute paths.
+ */
+function resolvePairs(
   copyPairs: Array<CopyPair>,
   cwd: string,
   dist: string,
@@ -70,19 +80,18 @@ export function resolvePairs(
 }
 
 async function builder(options: OptionsType): Promise<void> {
-  console.log(`Building: ${JSON.stringify(options)}`);
-
-  // Remove the dist directory
+  // Remove the dist directory.
   if (existsSync(options.dist)) {
     await rm(options.dist, { recursive: true, force: true });
   }
 
-  // Create the dist directory
+  // Create the dist directory.
   await mkdir(options.dist, { recursive: true });
 
-  // Setup environment variables
+  // Setup environment variables.
   loadEnv(options.testing);
 
+  // Specific m3ssag1n8 environment variables.
   const define: Record<string, string> = {
     "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
     "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
@@ -90,14 +99,14 @@ async function builder(options: OptionsType): Promise<void> {
     "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`,
   };
 
-  // Also add all environment variables that start with COMP318_
+  // Also add all environment variables that start with COMP318_.
   for (const [key, value] of Object.entries(process.env)) {
     if (key.startsWith("COMP318_")) {
       define[`process.env.${key}`] = `"${value}"`;
     }
   }
 
-  // Base esbuild configuration
+  // Base esbuild configuration.
   const baseConfig: BuildOptions = {
     entryPoints: [options.entry],
     bundle: true,
@@ -106,6 +115,7 @@ async function builder(options: OptionsType): Promise<void> {
     define,
   };
 
+  // Resolve copy pairs paths.
   const cwd = process.cwd();
   const dist = resolve(cwd, options.dist);
   const resolvedCopyPairs = resolvePairs(options.copy || [], cwd, dist);
@@ -128,7 +138,7 @@ async function builder(options: OptionsType): Promise<void> {
       break;
     }
     case "profile": {
-      // Need to remove previous profiling information
+      // Need to remove previous profiling information.
       const nycDir = resolve(process.cwd(), ".nyc_output");
       if (existsSync(nycDir)) {
         await rm(nycDir, { recursive: true, force: true });

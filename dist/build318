@@ -9,10 +9,6 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -29,7 +25,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
 // node_modules/commander/lib/error.js
 var require_error = __commonJS({
@@ -3458,11 +3453,6 @@ var require_commander = __commonJS({
 });
 
 // src/build.ts
-var build_exports = {};
-__export(build_exports, {
-  resolvePairs: () => resolvePairs
-});
-module.exports = __toCommonJS(build_exports);
 var import_node_fs3 = require("node:fs");
 var import_promises3 = require("node:fs/promises");
 var import_node_path4 = require("node:path");
@@ -4863,7 +4853,6 @@ function resolvePairs(copyPairs, cwd, dist) {
   });
 }
 async function builder(options) {
-  console.log(`Building: ${JSON.stringify(options)}`);
   if ((0, import_node_fs3.existsSync)(options.dist)) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }
@@ -4974,8 +4963,4 @@ async function run() {
 run().catch((error) => {
   console.error("Build failed:", error);
   process.exit(1);
-});
-// Annotate the CommonJS export names for ESM import in node:
-0 && (module.exports = {
-  resolvePairs
 });
