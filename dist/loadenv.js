@@ -374,14 +374,22 @@ module.exports = __toCommonJS(loadenv_exports);
 var import_node_fs = require("node:fs");
 var import_node_path = require("node:path");
 var import_dotenv = __toESM(require_main());
-var envFiles = [".env.local", ".env"];
-function loadEnv() {
-  envFiles.forEach((file) => {
-    const fullPath = (0, import_node_path.resolve)(file);
-    if ((0, import_node_fs.existsSync)(fullPath)) {
-      import_dotenv.default.config({ path: file });
+var defaultEnvFile = ".env";
+var localEnvFile = ".env.local";
+var testingEnvFile = ".env.testing";
+function loadEnv(testing = false) {
+  const override = testing ? testingEnvFile : localEnvFile;
+  const defaultPath = (0, import_node_path.resolve)(defaultEnvFile);
+  if ((0, import_node_fs.existsSync)(defaultPath)) {
+    import_dotenv.default.config({ path: defaultPath });
+  }
+  const overridePath = (0, import_node_path.resolve)(override);
+  if ((0, import_node_fs.existsSync)(overridePath)) {
+    const overrides = import_dotenv.default.parse((0, import_node_fs.readFileSync)(overridePath, "utf8"));
+    for (const key in overrides) {
+      process.env[key] = overrides[key];
     }
-  });
+  }
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

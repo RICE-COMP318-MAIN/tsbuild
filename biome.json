@@ -13,40 +13,52 @@
     "enabled": true,
     "indentStyle": "space"
   },
-  "assist": {
-    "actions": {
-      "source": {
-        "organizeImports": "on"
-      }
-    }
-  },
   "linter": {
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "useRegexLiterals": "off",
+        "useWhile": "on"
+      },
       "correctness": {
         "noInvalidUseBeforeDeclaration": "error",
         "noUnusedPrivateClassMembers": "error",
-        "noUnusedImports": "error"
+        "noUnusedImports": "error",
+        "noUndeclaredDependencies": "error"
       },
-      "complexity": {
-        "noForEach": "off",
-        "noExcessiveCognitiveComplexity": "off"
-      },
-      "suspicious": {
-        "noExplicitAny": "error"
+      "nursery": {
+        "noShadow": "error",
+        "noTsIgnore": "error",
+        "useAdjacentGetterSetter": "error"
       },
       "style": {
-        "noParameterAssign": "error",
-        "useAsConstAssertion": "error",
-        "useDefaultParameterLast": "error",
-        "useEnumInitializers": "error",
-        "useSelfClosingElements": "error",
-        "useSingleVarDeclarator": "error",
-        "noUnusedTemplateLiteral": "error",
-        "useNumberNamespace": "error",
         "noInferrableTypes": "error",
-        "noUselessElse": "error"
+        "noParameterAssign": "error",
+        "noParameterProperties": "error",
+        "noUnusedTemplateLiteral": "error",
+        "noUselessElse": "error",
+        "useAsConstAssertion": "error",
+        "useCollapsedElseIf": "error",
+        "useCollapsedIf": "error",
+        "useConsistentBuiltinInstantiation": "error",
+        "useDefaultParameterLast": "error",
+        "useForOf": "on",
+        "useThrowNewError": "error",
+        "useThrowOnlyError": "error"
+      },
+      "suspicious": {
+        "noEvolvingTypes": "error",
+        "noVar": "error",
+        "useErrorMessage": "error"
+      }
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on",
+        "useSortedProperties": "on"
       }
     }
   },
@@ -57,6 +69,11 @@
   },
   "html": {
     "formatter": {
+      "enabled": true
+    }
+  },
+  "css": {
+    "assist": {
       "enabled": true
     }
   }
