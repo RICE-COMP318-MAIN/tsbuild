@@ -4863,7 +4863,7 @@ function resolvePairs(copyPairs, cwd, dist) {
   });
 }
 async function builder(options) {
-  console.log(`Building: ${options}`);
+  console.log(`Building: ${JSON.stringify(options)}`);
   if ((0, import_node_fs3.existsSync)(options.dist)) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }

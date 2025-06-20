@@ -70,7 +70,7 @@ export function resolvePairs(
 }
 
 async function builder(options: OptionsType): Promise<void> {
-  console.log(`Building: ${options}`);
+  console.log(`Building: ${JSON.stringify(options)}`);
 
   // Remove the dist directory
   if (existsSync(options.dist)) {
