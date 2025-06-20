@@ -40,6 +40,7 @@ type OptionsType = {
   dist: string; // Output directory for the build
   entry: string; // Entry file for the application
   output: string; // Output file (relative to output directory)
+  test?: boolean; // Whether to run in test mode (loads test environment)
   copy?: Array<CopyPair>; // Array of copy pairs for static assets
 };
 
@@ -77,8 +78,8 @@ async function builder(options: OptionsType): Promise<void> {
   await mkdir(options.dist, { recursive: true });
 
   // Setup environment variables
-  if (options.mode === "profile") {
-    // Load test environment when profiling.
+  if (options.test) {
+    // Load test environment variables.
     loadEnv(true);
   } else {
     loadEnv();
@@ -203,6 +204,7 @@ async function run(): Promise<void> {
       },
       defaultOptions.copy || [],
     )
+    .option("-t, --testing", "Run in test mode (loads test environment)", false)
     .action((mode: BuildMode, opts) => {
       opts.mode = mode;
       const options = Object.assign({}, defaultOptions, opts);

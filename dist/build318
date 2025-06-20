@@ -4865,7 +4865,7 @@ async function builder(options) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }
   await (0, import_promises3.mkdir)(options.dist, { recursive: true });
-  if (options.mode === "profile") {
+  if (options.test) {
     loadEnv(true);
   } else {
     loadEnv();
@@ -4965,7 +4965,7 @@ async function run() {
       return copyPairs;
     },
     defaultOptions.copy || []
-  ).action((mode, opts) => {
+  ).option("-t, --testing", "Run in test mode (loads test environment)", false).action((mode, opts) => {
     opts.mode = mode;
     const options = Object.assign({}, defaultOptions, opts);
     builder(options);
