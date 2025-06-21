@@ -4740,31 +4740,49 @@ var Mime_default = Mime;
 var src_default = new Mime_default(standard_default, other_default)._freeze();
 
 // src/serve.ts
-var clients = [];
-function handleSSE(req, res) {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive"
-  });
-  res.write("\n");
-  clients.push(res);
-  req.on("close", () => {
-    const idx = clients.indexOf(res);
-    if (idx >= 0) clients.splice(idx, 1);
-  });
-}
-function sendReload() {
-  for (const client of clients) {
-    client.write("data: reload\n\n");
+var SSEManager = class {
+  clients = [];
+  /**
+   * Handles an incoming SSE connection and adds the client to the list.
+   * @param req - The HTTP request.
+   * @param res - The HTTP response.
+   */
+  handle(req, res) {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive"
+    });
+    res.write("\n");
+    this.clients.push(res);
+    req.on("close", () => {
+      const idx = this.clients.indexOf(res);
+      if (idx >= 0) this.clients.splice(idx, 1);
+    });
   }
-}
+  /**
+   * Sends a reload event to all connected SSE clients.
+   */
+  sendReload() {
+    for (const client of this.clients) {
+      client.write("data: reload\n\n");
+    }
+  }
+  /**
+   * Closes all SSE client connections.
+   */
+  closeAll() {
+    this.clients.forEach((res) => res.end());
+    this.clients = [];
+  }
+};
 async function serve(root, port, ctx, copyPairs) {
   await copyAllAssets(copyPairs);
   await ctx.rebuild();
+  const sseManager = new SSEManager();
   const server = import_node_http.default.createServer((req, res) => {
     if (req.url === "/__reload") {
-      return handleSSE(req, res);
+      return sseManager.handle(req, res);
     }
     const url = req.url ?? "/";
     const filePath = import_node_path3.default.join(
@@ -4802,13 +4820,13 @@ async function serve(root, port, ctx, copyPairs) {
   assetWatcher.on("all", async () => {
     await copyAllAssets(copyPairs);
     console.log("Assets copied");
-    sendReload();
+    sseManager.sendReload();
   });
   const rebuild = async () => {
     try {
       await ctx.rebuild();
       console.log("Rebuilt source");
-      sendReload();
+      sseManager.sendReload();
     } catch (err) {
       console.error("Build error:", err);
     }
@@ -4821,7 +4839,7 @@ async function serve(root, port, ctx, copyPairs) {
     console.log("\nShutting down...");
     assetWatcher.close();
     sourceWatcher.close();
-    clients.forEach((res) => res.end());
+    sseManager.closeAll();
     server.close(() => process.exit(0));
   });
 }

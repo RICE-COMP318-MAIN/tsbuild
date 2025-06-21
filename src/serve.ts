@@ -6,30 +6,65 @@ import type { BuildContext } from "esbuild";
 import mime from "mime";
 import { type CopyPair, copyAllAssets } from "./copyfiles";
 
-const clients: http.ServerResponse[] = [];
+/**
+ * Manages Server-Sent Events (SSE) clients for live reload.
+ */
+class SSEManager {
+  private clients: http.ServerResponse[] = [];
 
-// SSE endpoint
-function handleSSE(req: http.IncomingMessage, res: http.ServerResponse) {
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-  });
-  res.write("\n");
-  clients.push(res);
-  req.on("close", () => {
-    const idx = clients.indexOf(res);
-    if (idx >= 0) clients.splice(idx, 1);
-  });
-}
+  /**
+   * Handles an incoming SSE connection and adds the client to the list.
+   * @param req - The HTTP request.
+   * @param res - The HTTP response.
+   */
+  handle(req: http.IncomingMessage, res: http.ServerResponse) {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+    res.write("\n");
+    this.clients.push(res);
+    req.on("close", () => {
+      const idx = this.clients.indexOf(res);
+      if (idx >= 0) this.clients.splice(idx, 1);
+    });
+  }
 
-// Trigger reload
-function sendReload() {
-  for (const client of clients) {
-    client.write("data: reload\n\n");
+  /**
+   * Sends a reload event to all connected SSE clients.
+   */
+  sendReload() {
+    for (const client of this.clients) {
+      client.write("data: reload\n\n");
+    }
+  }
+
+  /**
+   * Closes all SSE client connections.
+   */
+  closeAll() {
+    this.clients.forEach((res) => res.end());
+    this.clients = [];
   }
 }
 
+/**
+ * Serves the application with live reload for development.
+ *
+ * Starts an HTTP server to serve static files from the given root directory,
+ * watches for changes in source files and static assets, triggers rebuilds and
+ * asset copying as needed, and notifies connected clients to reload via
+ * Server-Sent Events (SSE).
+ *
+ * @param {string} root - The root directory to serve files from.
+ * @param {number} port - The port on which to run the server.
+ * @param {BuildContext} ctx - The esbuild build context for rebuilding on
+ * changes.
+ * @param {Array<CopyPair>} copyPairs - Array of asset copy pairs to watch and
+ * copy.
+ * @returns {Promise<void>} A promise that resolves when the server is running.
+ */
 export async function serve(
   root: string,
   port: number,
@@ -42,10 +77,12 @@ export async function serve(
   // Initial build
   await ctx.rebuild();
 
+  const sseManager = new SSEManager();
+
   // Start server
   const server = http.createServer((req, res) => {
     if (req.url === "/__reload") {
-      return handleSSE(req, res);
+      return sseManager.handle(req, res);
     }
 
     const url = req.url ?? "/";
@@ -92,7 +129,7 @@ export async function serve(
   assetWatcher.on("all", async () => {
     await copyAllAssets(copyPairs);
     console.log("Assets copied");
-    sendReload();
+    sseManager.sendReload();
   });
 
   // --- Watch for source changes ---
@@ -100,7 +137,7 @@ export async function serve(
     try {
       await ctx.rebuild();
       console.log("Rebuilt source");
-      sendReload();
+      sseManager.sendReload();
     } catch (err) {
       console.error("Build error:", err);
     }
@@ -117,7 +154,7 @@ export async function serve(
     console.log("\nShutting down...");
     assetWatcher.close();
     sourceWatcher.close();
-    clients.forEach((res) => res.end());
+    sseManager.closeAll();
     server.close(() => process.exit(0));
   });
 }
