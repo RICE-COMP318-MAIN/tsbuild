@@ -79,6 +79,15 @@ function resolvePairs(
   });
 }
 
+/**
+ * Handles the build, serve, and profile modes for the application. Cleans and
+ * prepares the output directory, loads environment variables, resolves asset
+ * copy pairs, and invokes esbuild with the appropriate configuration.
+ *
+ * @param {OptionsType} options - The build options parsed from the CLI.
+ * @returns {Promise<void>} A promise that resolves when the build or serve
+ * process completes.
+ */
 async function builder(options: OptionsType): Promise<void> {
   // Remove the dist directory.
   if (existsSync(options.dist)) {
@@ -125,7 +134,7 @@ async function builder(options: OptionsType): Promise<void> {
       const ctx: BuildContext = await context({
         ...baseConfig,
       });
-      serve(dist, options.port, ctx, resolvedCopyPairs);
+      await serve(dist, options.port, ctx, resolvedCopyPairs);
       break;
     }
     case "profile": {
@@ -152,6 +161,16 @@ async function builder(options: OptionsType): Promise<void> {
   }
 }
 
+/**
+ * Runs the build script by parsing command-line arguments and invoking the
+ * appropriate build mode (build, serve, or profile) with the provided options.
+ *
+ * Sets up the CLI using Commander, validates options, and dispatches to the
+ * builder.
+ *
+ * @returns {Promise<void>} A promise that resolves when the build process
+ * completes.
+ */
 async function run(): Promise<void> {
   program
     .name("build318")
@@ -204,14 +223,14 @@ async function run(): Promise<void> {
       defaultOptions.copy || [],
     )
     .option("-t, --testing", "Run in test mode (loads test environment)", false)
-    .action((mode: BuildMode, opts) => {
+    .action(async (mode: BuildMode, opts) => {
       opts.mode = mode;
       const options = Object.assign({}, defaultOptions, opts);
 
-      builder(options);
+      await builder(options);
     });
 
-  program.parse(process.argv);
+  await program.parseAsync(process.argv);
 }
 
 run().catch((error) => {

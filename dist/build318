@@ -4885,7 +4885,7 @@ async function builder(options) {
       const ctx = await (0, import_esbuild2.context)({
         ...baseConfig
       });
-      serve(dist, options.port, ctx, resolvedCopyPairs);
+      await serve(dist, options.port, ctx, resolvedCopyPairs);
       break;
     }
     case "profile": {
@@ -4946,12 +4946,12 @@ async function run() {
       return copyPairs;
     },
     defaultOptions.copy || []
-  ).option("-t, --testing", "Run in test mode (loads test environment)", false).action((mode, opts) => {
+  ).option("-t, --testing", "Run in test mode (loads test environment)", false).action(async (mode, opts) => {
     opts.mode = mode;
     const options = Object.assign({}, defaultOptions, opts);
-    builder(options);
+    await builder(options);
   });
-  program.parse(process.argv);
+  await program.parseAsync(process.argv);
 }
 run().catch((error) => {
   console.error("Build failed:", error);
