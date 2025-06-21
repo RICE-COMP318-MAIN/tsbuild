@@ -1,6 +1,6 @@
 {
   "name": "build318",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Build tool for COMP 318 TypeScript projects.",
   "keywords": [
     "esbuild",

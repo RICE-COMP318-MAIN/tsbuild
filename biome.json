@@ -23,6 +23,7 @@
       },
       "correctness": {
         "noInvalidUseBeforeDeclaration": "error",
+        "noUndeclaredVariables": "error",
         "noUnusedPrivateClassMembers": "error",
         "noUnusedImports": "error",
         "noUndeclaredDependencies": "error"
@@ -57,24 +58,13 @@
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on",
-        "useSortedProperties": "on"
+        "organizeImports": "on"
       }
     }
   },
   "javascript": {
     "formatter": {
       "quoteStyle": "double"
-    }
-  },
-  "html": {
-    "formatter": {
-      "enabled": true
-    }
-  },
-  "css": {
-    "assist": {
-      "enabled": true
     }
   }
 }

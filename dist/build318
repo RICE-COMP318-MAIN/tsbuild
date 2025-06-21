@@ -4858,16 +4858,9 @@ async function builder(options) {
   }
   await (0, import_promises3.mkdir)(options.dist, { recursive: true });
   loadEnv(options.testing);
-  const define = {
-    "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
-    "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
-    "process.env.AUTH_PATH": `"${process.env.AUTH_PATH}"`,
-    "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`
-  };
+  const define = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (key.startsWith("COMP318_")) {
-      define[`process.env.${key}`] = `"${value}"`;
-    }
+    define[`process.env.${key}`] = `"${value}"`;
   }
   const baseConfig = {
     entryPoints: [options.entry],

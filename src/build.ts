@@ -91,19 +91,10 @@ async function builder(options: OptionsType): Promise<void> {
   // Setup environment variables.
   loadEnv(options.testing);
 
-  // Specific m3ssag1n8 environment variables.
-  const define: Record<string, string> = {
-    "process.env.DATABASE_HOST": `"${process.env.DATABASE_HOST}"`,
-    "process.env.DATABASE_PATH": `"${process.env.DATABASE_PATH}"`,
-    "process.env.AUTH_PATH": `"${process.env.AUTH_PATH}"`,
-    "process.env.REQUEST_TIMEOUT": `"${process.env.REQUEST_TIMEOUT}"`,
-  };
-
-  // Also add all environment variables that start with COMP318_.
+  // Add all environment variables to the define object.
+  const define: Record<string, string> = {};
   for (const [key, value] of Object.entries(process.env)) {
-    if (key.startsWith("COMP318_")) {
-      define[`process.env.${key}`] = `"${value}"`;
-    }
+    define[`process.env.${key}`] = `"${value}"`;
   }
 
   // Base esbuild configuration.
