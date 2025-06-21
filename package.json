@@ -26,7 +26,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
+    "@biomejs/biome": "^2.0.4",
     "@types/istanbul-lib-instrument": "^1.7.7",
     "@types/mime": "^3.0.4",
     "@types/node": "^24.0.1",
