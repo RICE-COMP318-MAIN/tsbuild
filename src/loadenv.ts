@@ -5,14 +5,14 @@ import dotenv from "dotenv";
 // Environment variable files.
 const defaultEnvFile = ".env";
 const localEnvFile = ".env.local";
-const testingEnvFile = ".env.testing";
+const testingEnvFile = ".env.test";
 
 /**
  * Load environment variables from .env files into process.env.
  *
  * This function loads environment variables from a default .env file, and
  * overrides the defaults from an optional local .env.local file or an optional
- * testing .env.testing file.
+ * testing .env.test file.
  *
  * @param testing - If true, loads the testing override environment file instead
  * of the local one.
