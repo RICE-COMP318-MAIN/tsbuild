@@ -30,7 +30,6 @@
     "@types/istanbul-lib-instrument": "^1.7.7",
     "@types/mime": "^3.0.4",
     "@types/node": "^24.0.1",
-    "commander": "^14.0.0",
     "mime": "^4.0.7",
     "typescript": "^5.8.3"
   },

@@ -1,0 +1,185 @@
+import type { CopyPair } from "./copyfiles";
+
+// Valid modes for the build process
+//   build: Build the application
+//   serve: Serve the application with live reload
+//   profile: Serve the application with Istanbul code coverage
+const validModes = ["build", "serve", "profile"] as const;
+type BuildMode = (typeof validModes)[number];
+
+// Command line options.
+export type Options = {
+  mode: BuildMode; // Mode of operation
+  port: number; // Port for serving the application
+  dist: string; // Output directory for the build
+  entry: string; // Entry file for the application
+  output: string; // Output file (relative to output directory)
+  testing: boolean; // Whether to run in test mode (loads test environment)
+  copy?: Array<CopyPair>; // Array of copy pairs for static assets
+};
+
+// Default options.
+const defaultOptions: Options = {
+  mode: "build", // Default mode
+  port: 1234, // Default port for serving
+  dist: "dist", // Default output directory
+  entry: "src/main.ts", // Default entry file
+  output: "main.js", // Default output file
+  testing: false, // Default to not running in test mode
+};
+
+function printUsage() {
+  console.log(`
+Usage: build318 [mode] [options]
+
+Build script for COMP 318
+
+Arguments:
+  [mode]                  Build mode (choices: ${validModes.join(
+    ", ",
+  )}, default: ${defaultOptions.mode})
+
+Options:
+  -p, --port <number>     Port for serving the application (default: ${
+    defaultOptions.port
+  })
+  -d, --dist <path>       Output directory (default: ${defaultOptions.dist})
+  -e, --entry <path>      Entry file (default: ${defaultOptions.entry})
+  -o, --output <file>     Output file (relative to output directory) (default: ${
+    defaultOptions.output
+  })
+  -c, --copy <from:to>    Copy pairs in the format 'from:to'. Can be specified multiple times.
+  -t, --testing           Run in test mode (loads test environment)
+  -h, --help              Show this help message
+`);
+}
+
+export function parseArgs(argv: string[]): Options {
+  const args = [...argv.slice(2)];
+  const opts: Partial<Options> = {
+    copy: [],
+  };
+
+  let mode: BuildMode | undefined;
+
+  // Copy pair regex to validate the format "from:to".
+  const copyRegex = /^[^:]+:[^:]+$/;
+
+  while (args.length > 0) {
+    const arg = args.shift();
+
+    // Arg is guaranteed to be defined here since the loop condition is
+    // args.length > 0, but TypeScript doesn't know that, as it thinks args
+    // could have been mutated, so we assert !== undefined.
+    if (arg !== undefined && !arg.startsWith("-")) {
+      if (mode) {
+        console.log(`Unexpected argument: ${arg}`);
+        printUsage();
+        process.exit(1);
+      }
+
+      if (!validModes.includes(arg as BuildMode)) {
+        console.log(
+          `Invalid mode: "${arg}". Valid modes: ${validModes.join(", ")}`,
+        );
+        printUsage();
+        process.exit(1);
+      }
+
+      mode = arg as BuildMode;
+      continue;
+    }
+
+    switch (arg) {
+      case "-p":
+      case "--port": {
+        const val = args.shift();
+        const port = Number(val);
+        if (!val || Number.isNaN(port) || port <= 0 || port > 65535) {
+          console.log(
+            `Invalid port number: "${val}". Must be a number between 1 and 65535.`,
+          );
+          printUsage();
+          process.exit(1);
+        }
+        opts.port = port;
+        break;
+      }
+
+      case "-d":
+      case "--dist": {
+        const val = args.shift();
+        if (!val) {
+          console.log(`Missing value for ${arg}`);
+          printUsage();
+          process.exit(1);
+        }
+        opts.dist = val;
+        break;
+      }
+
+      case "-e":
+      case "--entry": {
+        const val = args.shift();
+        if (!val) {
+          console.log(`Missing value for ${arg}`);
+          printUsage();
+          process.exit(1);
+        }
+        opts.entry = val;
+        break;
+      }
+
+      case "-o":
+      case "--output": {
+        const val = args.shift();
+        if (!val) {
+          console.log(`Missing value for ${arg}`);
+          printUsage();
+          process.exit(1);
+        }
+        opts.output = val;
+        break;
+      }
+
+      case "-c":
+      case "--copy": {
+        const val = args.shift();
+        if (!val || !copyRegex.test(val)) {
+          console.log(
+            `Invalid copy pair: "${val}". Expected format is "from:to"`,
+          );
+          printUsage();
+          process.exit(1);
+        }
+        const [from, to] = val.split(":");
+        (opts.copy as CopyPair[]).push({ from, to });
+        break;
+      }
+
+      case "-t":
+      case "--testing": {
+        opts.testing = true;
+        break;
+      }
+
+      case "-h":
+      case "--help": {
+        printUsage();
+        process.exit(0);
+        break;
+      }
+
+      default:
+        console.log(`Unknown option: ${arg}`);
+        printUsage();
+        process.exit(1);
+    }
+  }
+
+  return {
+    ...defaultOptions,
+    ...opts,
+    mode: mode ?? defaultOptions.mode,
+  };
+}
