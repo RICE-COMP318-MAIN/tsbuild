@@ -72,7 +72,7 @@ function parseArgs(argv) {
     copy: []
   };
   let mode;
-  const copyRegex = /^[^:]+:[^:]+$/;
+  const copyRegex = /^[^:]+:[^:]*$/;
   while (args.length > 0) {
     const arg = args.shift();
     if (arg !== void 0 && !arg.startsWith("-")) {
