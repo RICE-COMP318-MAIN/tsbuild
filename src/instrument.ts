@@ -10,16 +10,25 @@ import {
 } from "esbuild";
 import { createInstrumenter, type Instrumenter } from "istanbul-lib-instrument";
 
+/**
+ * Instrument the given TypeScript source code for code coverage.
+ *
+ * @param filePath - The path to the TypeScript file.
+ * @param tsSource - The TypeScript source code to instrument.
+ * @returns A promise that resolves to an esbuild OnLoadResult containing the instrumented code.
+ */
 async function instrument(
   filePath: string,
   tsSource: string,
 ): Promise<OnLoadResult> {
+  // Transpile the TypeScript code to JavaScript using esbuild.
   const jsTransformed: TransformResult = await transform(tsSource, {
     loader: "ts",
     sourcemap: true,
     sourcefile: filePath,
   });
 
+  // Instrument the transpiled JavaScript code using Istanbul.
   const instrumenter: Instrumenter = createInstrumenter({
     esModules: true,
     produceSourceMap: true,
@@ -43,16 +52,6 @@ async function instrument(
   };
 }
 
-async function instrumentOnLoad(
-  args: OnLoadArgs,
-): Promise<OnLoadResult | undefined> {
-  if (args.path.includes("node_modules")) return;
-
-  const tsSource = await readFile(args.path, "utf8");
-
-  return instrument(args.path, tsSource);
-}
-
 /**
  * An esbuild plugin to instrument TypeScript files for code coverage.
  *
@@ -63,7 +62,16 @@ async function instrumentOnLoad(
 export const IstanbulPlugin: Plugin = {
   name: "istanbul-instrumenter",
   setup(build: PluginBuild): void {
-    build.onLoad({ filter: /\.[cm]?ts$/ }, instrumentOnLoad);
+    build.onLoad(
+      { filter: /\.[cm]?ts$/ },
+      async (args: OnLoadArgs): Promise<OnLoadResult | undefined> => {
+        if (args.path.includes("node_modules")) return;
+
+        const tsSource = await readFile(args.path, "utf8");
+
+        return instrument(args.path, tsSource);
+      },
+    );
   },
 };
 

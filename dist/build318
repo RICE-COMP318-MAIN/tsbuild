@@ -220,15 +220,17 @@ ${inlineSourceMap}`;
     resolveDir: import_node_path.default.dirname(filePath)
   };
 }
-async function instrumentOnLoad(args) {
-  if (args.path.includes("node_modules")) return;
-  const tsSource = await (0, import_promises2.readFile)(args.path, "utf8");
-  return instrument(args.path, tsSource);
-}
 var IstanbulPlugin = {
   name: "istanbul-instrumenter",
   setup(build2) {
-    build2.onLoad({ filter: /\.[cm]?ts$/ }, instrumentOnLoad);
+    build2.onLoad(
+      { filter: /\.[cm]?ts$/ },
+      async (args) => {
+        if (args.path.includes("node_modules")) return;
+        const tsSource = await (0, import_promises2.readFile)(args.path, "utf8");
+        return instrument(args.path, tsSource);
+      }
+    );
   }
 };
 
