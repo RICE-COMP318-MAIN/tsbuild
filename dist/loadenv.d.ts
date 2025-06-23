@@ -6,15 +6,6 @@
  */
 declare function parseEnvString(envString: string): Record<string, string>;
 /**
- * Load environment variables from a specified .env file.
- *
- * Does not support variable expansion or multiline values.
- *
- * @param filePath - The path to the .env file to load.
- * @returns an object containing the environment variables and their values.
- */
-declare function loadEnvFile(filePath: string): Record<string, string>;
-/**
  * Load environment variables from .env files and return them as an object.
  *
  * This function loads environment variables from a default .env file, and
@@ -30,6 +21,5 @@ declare function loadEnvFile(filePath: string): Record<string, string>;
 export declare function loadEnv(testing?: boolean): Record<string, string>;
 export declare const __test__: {
     parseEnvString: typeof parseEnvString;
-    loadEnvFile: typeof loadEnvFile;
 };
 export {};

@@ -99,11 +99,8 @@ export function loadEnv(testing = false): Record<string, string> {
 
   // Overrides
   const overrideEnv = loadEnvFile(override);
-  for (const key in overrideEnv) {
-    env[key] = overrideEnv[key];
-  }
 
-  return env;
+  return { ...env, ...overrideEnv };
 }
 
-export const __test__ = { parseEnvString, loadEnvFile };
+export const __test__ = { parseEnvString };

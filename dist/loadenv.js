@@ -71,12 +71,9 @@ function loadEnv(testing = false) {
   const override = testing ? testingEnvFile : localEnvFile;
   const env = loadEnvFile(defaultEnvFile);
   const overrideEnv = loadEnvFile(override);
-  for (const key in overrideEnv) {
-    env[key] = overrideEnv[key];
-  }
-  return env;
+  return { ...env, ...overrideEnv };
 }
-var __test__ = { parseEnvString, loadEnvFile };
+var __test__ = { parseEnvString };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
   __test__,
