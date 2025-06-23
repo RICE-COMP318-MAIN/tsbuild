@@ -28,9 +28,9 @@ const defaultOptions: Options = {
   testing: false, // Default to not running in test mode
 };
 
-function printUsage() {
+function usage(name: string) {
   console.log(`
-Usage: build318 [mode] [options]
+Usage: ${name} [mode] [options]
 
 Build script for COMP 318
 
@@ -55,6 +55,7 @@ Options:
 }
 
 export function parseArgs(argv: string[]): Options {
+  const name = argv?.[1].split("/").pop() ?? "build318";
   const args = [...argv.slice(2)];
   const opts: Partial<Options> = {
     copy: [],
@@ -74,7 +75,7 @@ export function parseArgs(argv: string[]): Options {
     if (arg !== undefined && !arg.startsWith("-")) {
       if (mode) {
         console.log(`Unexpected argument: ${arg}`);
-        printUsage();
+        usage(name);
         process.exit(1);
       }
 
@@ -82,7 +83,7 @@ export function parseArgs(argv: string[]): Options {
         console.log(
           `Invalid mode: "${arg}". Valid modes: ${validModes.join(", ")}`,
         );
-        printUsage();
+        usage(name);
         process.exit(1);
       }
 
@@ -99,7 +100,7 @@ export function parseArgs(argv: string[]): Options {
           console.log(
             `Invalid port number: "${val}". Must be a number between 1 and 65535.`,
           );
-          printUsage();
+          usage(name);
           process.exit(1);
         }
         opts.port = port;
@@ -111,7 +112,7 @@ export function parseArgs(argv: string[]): Options {
         const val = args.shift();
         if (!val) {
           console.log(`Missing value for ${arg}`);
-          printUsage();
+          usage(name);
           process.exit(1);
         }
         opts.dist = val;
@@ -123,7 +124,7 @@ export function parseArgs(argv: string[]): Options {
         const val = args.shift();
         if (!val) {
           console.log(`Missing value for ${arg}`);
-          printUsage();
+          usage(name);
           process.exit(1);
         }
         opts.entry = val;
@@ -135,7 +136,7 @@ export function parseArgs(argv: string[]): Options {
         const val = args.shift();
         if (!val) {
           console.log(`Missing value for ${arg}`);
-          printUsage();
+          usage(name);
           process.exit(1);
         }
         opts.output = val;
@@ -149,7 +150,7 @@ export function parseArgs(argv: string[]): Options {
           console.log(
             `Invalid copy pair: "${val}". Expected format is "from:to"`,
           );
-          printUsage();
+          usage(name);
           process.exit(1);
         }
         const [from, to] = val.split(":");
@@ -165,14 +166,14 @@ export function parseArgs(argv: string[]): Options {
 
       case "-h":
       case "--help": {
-        printUsage();
+        usage(name);
         process.exit(0);
         break;
       }
 
       default:
         console.log(`Unknown option: ${arg}`);
-        printUsage();
+        usage(name);
         process.exit(1);
     }
   }
