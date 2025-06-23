@@ -1,6 +1,6 @@
 import "should";
-import { describe, it } from "mocha";
-import { __test__ } from "../src/loadenv.ts";
+import { describe, it } from "vitest";
+import { __test__ } from "../src/loadenv";
 
 const { parseEnvString } = __test__;
 

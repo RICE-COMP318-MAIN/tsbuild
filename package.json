@@ -22,8 +22,7 @@
   "types": "dist/loadenv.d.ts",
   "scripts": {
     "build": "node scripts/build.mts",
-    "check": "tsc && biome check --write",
-    "test": "mocha test/**/*.spec.ts"
+    "check": "tsc && biome check --write"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.5",
@@ -31,11 +30,7 @@
     "@types/mime": "^3.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.1",
-    "@types/sinon": "^17.0.4",
     "mime": "^4.0.7",
-    "mocha": "^11.7.0",
-    "should": "^13.2.3",
-    "sinon": "^21.0.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {

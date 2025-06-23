@@ -194,42 +194,41 @@ var import_promises2 = require("node:fs/promises");
 var import_node_path = __toESM(require("node:path"));
 var import_esbuild = require("esbuild");
 var import_istanbul_lib_instrument = require("istanbul-lib-instrument");
+async function instrument(filePath, tsSource) {
+  const jsTransformed = await (0, import_esbuild.transform)(tsSource, {
+    loader: "ts",
+    sourcemap: true,
+    sourcefile: filePath
+  });
+  const instrumenter = (0, import_istanbul_lib_instrument.createInstrumenter)({
+    esModules: true,
+    produceSourceMap: true
+  });
+  const instrumentedCode = instrumenter.instrumentSync(
+    jsTransformed.code,
+    filePath,
+    JSON.parse(jsTransformed.map)
+  );
+  const finalMap = instrumenter.lastSourceMap();
+  const base64Map = Buffer.from(JSON.stringify(finalMap)).toString("base64");
+  const inlineSourceMap = `//# sourceMappingURL=data:application/json;base64,${base64Map}`;
+  const finalCode = `${instrumentedCode}
+${inlineSourceMap}`;
+  return {
+    contents: finalCode,
+    loader: "js",
+    resolveDir: import_node_path.default.dirname(filePath)
+  };
+}
+async function instrumentOnLoad(args) {
+  if (args.path.includes("node_modules")) return;
+  const tsSource = await (0, import_promises2.readFile)(args.path, "utf8");
+  return instrument(args.path, tsSource);
+}
 var IstanbulPlugin = {
   name: "istanbul-instrumenter",
   setup(build2) {
-    build2.onLoad(
-      { filter: /\.[cm]?ts$/ },
-      async (args) => {
-        if (args.path.includes("node_modules")) return;
-        const tsSource = await (0, import_promises2.readFile)(args.path, "utf8");
-        const jsTransformed = await (0, import_esbuild.transform)(tsSource, {
-          loader: "ts",
-          sourcemap: true,
-          sourcefile: args.path
-        });
-        const instrumenter = (0, import_istanbul_lib_instrument.createInstrumenter)({
-          esModules: true,
-          produceSourceMap: true
-        });
-        const instrumentedCode = instrumenter.instrumentSync(
-          jsTransformed.code,
-          args.path,
-          JSON.parse(jsTransformed.map)
-        );
-        const finalMap = instrumenter.lastSourceMap();
-        const base64Map = Buffer.from(JSON.stringify(finalMap)).toString(
-          "base64"
-        );
-        const inlineSourceMap = `//# sourceMappingURL=data:application/json;base64,${base64Map}`;
-        const finalCode = `${instrumentedCode}
-${inlineSourceMap}`;
-        return {
-          contents: finalCode,
-          loader: "js",
-          resolveDir: import_node_path.default.dirname(args.path)
-        };
-      }
-    );
+    build2.onLoad({ filter: /\.[cm]?ts$/ }, instrumentOnLoad);
   }
 };
 
