@@ -1,6 +1,6 @@
 {
   "name": "build318",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "Build tool for COMP 318 TypeScript projects.",
   "keywords": [
     "esbuild",
@@ -26,21 +26,19 @@
     "test": "mocha test/**/*.spec.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
     "@types/chai": "^5.2.2",
+    "@biomejs/biome": "^2.0.4",
     "@types/istanbul-lib-instrument": "^1.7.7",
     "@types/mime": "^3.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.1",
     "chai": "^5.2.0",
-    "commander": "^14.0.0",
     "mime": "^4.0.7",
     "mocha": "^11.7.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
     "chokidar": "^4.0.3",
-    "dotenv": "^16.5.0",
     "esbuild": "^0.25.5",
     "istanbul-lib-instrument": "^6.0.3"
   }
