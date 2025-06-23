@@ -9,6 +9,8 @@ const testingEnvFile = ".env.test";
 /**
  * Load environment variables from a specified .env file.
  *
+ * Does not support variable expansion or multiline values.
+ *
  * @param filePath - The path to the .env file to load.
  * @returns an object containing the environment variables and their values.
  */
@@ -27,25 +29,37 @@ function loadEnvFile(filePath: string): Record<string, string> {
   for (const line of lines) {
     const trimmed = line.trim();
 
-    // Skip empty lines or comments
+    // Skip empty lines or comments.
     if (!trimmed || trimmed.startsWith("#")) {
       continue;
     }
 
-    const eqIndex = trimmed.indexOf("=");
+    // Remove export keyword if present.
+    const keyValue = trimmed.replace(/^export\s+/, "");
+
+    const eqIndex = keyValue.indexOf("=");
     if (eqIndex === -1) {
       continue; // malformed line
     }
 
-    const key = trimmed.slice(0, eqIndex).trim();
-    let value = trimmed.slice(eqIndex + 1).trim();
+    const key = keyValue.slice(0, eqIndex).trim();
+    let value = keyValue.slice(eqIndex + 1).trim();
 
-    // Remove surrounding quotes if present
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    // Remove surrounding quotes if present.
+    if (value.startsWith("'") && value.endsWith("'")) {
       value = value.slice(1, -1);
+    } else if (value.startsWith('"') && value.endsWith('"')) {
+      // Handle escape sequences in double quotes.
+      const raw = value.slice(1, -1);
+      try {
+        // Parse to handle escaped characters.
+        value = JSON.parse(
+          `"${raw.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`,
+        );
+      } catch {
+        // If parsing fails, keep the raw value.
+        value = raw;
+      }
     }
 
     env[key] = value;
