@@ -235,23 +235,43 @@ ${inlineSourceMap}`;
 // src/loadenv.ts
 var import_node_fs = require("node:fs");
 var import_node_path2 = require("node:path");
-var import_dotenv = __toESM(require("dotenv"));
 var defaultEnvFile = ".env";
 var localEnvFile = ".env.local";
 var testingEnvFile = ".env.test";
+function loadEnvFile(filePath) {
+  const env = {};
+  const absolutePath = (0, import_node_path2.resolve)(filePath);
+  if (!(0, import_node_fs.existsSync)(absolutePath)) {
+    return env;
+  }
+  const fileContents = (0, import_node_fs.readFileSync)(absolutePath, { encoding: "utf8" });
+  const lines = fileContents.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const eqIndex = trimmed.indexOf("=");
+    if (eqIndex === -1) {
+      continue;
+    }
+    const key = trimmed.slice(0, eqIndex).trim();
+    let value = trimmed.slice(eqIndex + 1).trim();
+    if (value.startsWith('"') && value.endsWith('"') || value.startsWith("'") && value.endsWith("'")) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
+  }
+  return env;
+}
 function loadEnv(testing = false) {
   const override = testing ? testingEnvFile : localEnvFile;
-  const defaultPath = (0, import_node_path2.resolve)(defaultEnvFile);
-  if ((0, import_node_fs.existsSync)(defaultPath)) {
-    import_dotenv.default.config({ path: defaultPath });
+  const env = loadEnvFile(defaultEnvFile);
+  const overrideEnv = loadEnvFile(override);
+  for (const key in overrideEnv) {
+    env[key] = overrideEnv[key];
   }
-  const overridePath = (0, import_node_path2.resolve)(override);
-  if ((0, import_node_fs.existsSync)(overridePath)) {
-    const overrides = import_dotenv.default.parse((0, import_node_fs.readFileSync)(overridePath, "utf8"));
-    for (const key in overrides) {
-      process.env[key] = overrides[key];
-    }
-  }
+  return env;
 }
 
 // src/serve.ts
@@ -1559,9 +1579,9 @@ async function builder(options) {
     await (0, import_promises3.rm)(options.dist, { recursive: true, force: true });
   }
   await (0, import_promises3.mkdir)(options.dist, { recursive: true });
-  loadEnv(options.testing);
+  const config = loadEnv(options.testing);
   const define = {};
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const [key, value] of Object.entries(config)) {
     define[`process.env.${key}`] = `"${value}"`;
   }
   const baseConfig = {

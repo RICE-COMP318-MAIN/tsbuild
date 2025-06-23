@@ -67,11 +67,11 @@ async function builder(options: Options): Promise<void> {
   await mkdir(options.dist, { recursive: true });
 
   // Setup environment variables.
-  loadEnv(options.testing);
+  const config = loadEnv(options.testing);
 
   // Add all environment variables to the define object.
   const define: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
+  for (const [key, value] of Object.entries(config)) {
     define[`process.env.${key}`] = `"${value}"`;
   }
 

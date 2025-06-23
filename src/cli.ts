@@ -36,7 +36,7 @@ Build script for COMP 318
 
 Arguments:
   [mode]                  Build mode (choices: ${validModes.join(
-    ", "
+    ", ",
   )}, default: ${defaultOptions.mode})
 
 Options:
@@ -80,7 +80,7 @@ export function parseArgs(argv: string[]): Options {
 
       if (!validModes.includes(arg as BuildMode)) {
         console.log(
-          `Invalid mode: "${arg}". Valid modes: ${validModes.join(", ")}`
+          `Invalid mode: "${arg}". Valid modes: ${validModes.join(", ")}`,
         );
         printUsage();
         process.exit(1);
@@ -97,7 +97,7 @@ export function parseArgs(argv: string[]): Options {
         const port = Number(val);
         if (!val || Number.isNaN(port) || port <= 0 || port > 65535) {
           console.log(
-            `Invalid port number: "${val}". Must be a number between 1 and 65535.`
+            `Invalid port number: "${val}". Must be a number between 1 and 65535.`,
           );
           printUsage();
           process.exit(1);
@@ -147,7 +147,7 @@ export function parseArgs(argv: string[]): Options {
         const val = args.shift();
         if (!val || !copyRegex.test(val)) {
           console.log(
-            `Invalid copy pair: "${val}". Expected format is "from:to"`
+            `Invalid copy pair: "${val}". Expected format is "from:to"`,
           );
           printUsage();
           process.exit(1);
