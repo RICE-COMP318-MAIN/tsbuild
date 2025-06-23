@@ -7,24 +7,14 @@ const localEnvFile = ".env.local";
 const testingEnvFile = ".env.test";
 
 /**
- * Load environment variables from a specified .env file.
+ * Parse the contents of an environment file.
  *
- * Does not support variable expansion or multiline values.
- *
- * @param filePath - The path to the .env file to load.
+ * @param envString - The contents of an environment file as a string.
  * @returns an object containing the environment variables and their values.
  */
-function loadEnvFile(filePath: string): Record<string, string> {
+function parseEnvString(envString: string): Record<string, string> {
   const env: Record<string, string> = {};
-
-  const absolutePath = resolve(filePath);
-
-  if (!existsSync(absolutePath)) {
-    return env;
-  }
-
-  const fileContents = readFileSync(absolutePath, { encoding: "utf8" });
-  const lines = fileContents.split(/\r?\n/);
+  const lines = envString.split(/\r?\n/);
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -53,9 +43,7 @@ function loadEnvFile(filePath: string): Record<string, string> {
       const raw = value.slice(1, -1);
       try {
         // Parse to handle escaped characters.
-        value = JSON.parse(
-          `"${raw.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`,
-        );
+        value = JSON.parse(`"${raw}"`);
       } catch {
         // If parsing fails, keep the raw value.
         value = raw;
@@ -66,6 +54,28 @@ function loadEnvFile(filePath: string): Record<string, string> {
   }
 
   return env;
+}
+
+/**
+ * Load environment variables from a specified .env file.
+ *
+ * Does not support variable expansion or multiline values.
+ *
+ * @param filePath - The path to the .env file to load.
+ * @returns an object containing the environment variables and their values.
+ */
+function loadEnvFile(filePath: string): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  const absolutePath = resolve(filePath);
+
+  if (!existsSync(absolutePath)) {
+    return env;
+  }
+
+  const fileContents = readFileSync(absolutePath, { encoding: "utf8" });
+
+  return parseEnvString(fileContents);
 }
 
 /**
@@ -95,3 +105,5 @@ export function loadEnv(testing = false): Record<string, string> {
 
   return env;
 }
+
+export const __test__ = { parseEnvString, loadEnvFile };

@@ -22,19 +22,18 @@
   "types": "dist/loadenv.d.ts",
   "scripts": {
     "build": "node scripts/build.mts",
-    "check": "tsc && biome check --write src/ scripts/ *.json",
+    "check": "tsc && biome check --write",
     "test": "mocha test/**/*.spec.ts"
   },
   "devDependencies": {
-    "@types/chai": "^5.2.2",
-    "@biomejs/biome": "^2.0.4",
+    "@biomejs/biome": "^2.0.5",
     "@types/istanbul-lib-instrument": "^1.7.7",
     "@types/mime": "^3.0.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.0.1",
-    "chai": "^5.2.0",
     "mime": "^4.0.7",
     "mocha": "^11.7.0",
+    "should": "^13.2.3",
     "typescript": "^5.8.3"
   },
   "dependencies": {

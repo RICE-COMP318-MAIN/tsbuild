@@ -20,6 +20,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/loadenv.ts
 var loadenv_exports = {};
 __export(loadenv_exports, {
+  __test__: () => __test__,
   loadEnv: () => loadEnv
 });
 module.exports = __toCommonJS(loadenv_exports);
@@ -28,14 +29,9 @@ var import_node_path = require("node:path");
 var defaultEnvFile = ".env";
 var localEnvFile = ".env.local";
 var testingEnvFile = ".env.test";
-function loadEnvFile(filePath) {
+function parseEnvString(envString) {
   const env = {};
-  const absolutePath = (0, import_node_path.resolve)(filePath);
-  if (!(0, import_node_fs.existsSync)(absolutePath)) {
-    return env;
-  }
-  const fileContents = (0, import_node_fs.readFileSync)(absolutePath, { encoding: "utf8" });
-  const lines = fileContents.split(/\r?\n/);
+  const lines = envString.split(/\r?\n/);
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
@@ -53,9 +49,7 @@ function loadEnvFile(filePath) {
     } else if (value.startsWith('"') && value.endsWith('"')) {
       const raw = value.slice(1, -1);
       try {
-        value = JSON.parse(
-          `"${raw.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
-        );
+        value = JSON.parse(`"${raw}"`);
       } catch {
         value = raw;
       }
@@ -63,6 +57,15 @@ function loadEnvFile(filePath) {
     env[key] = value;
   }
   return env;
+}
+function loadEnvFile(filePath) {
+  const env = {};
+  const absolutePath = (0, import_node_path.resolve)(filePath);
+  if (!(0, import_node_fs.existsSync)(absolutePath)) {
+    return env;
+  }
+  const fileContents = (0, import_node_fs.readFileSync)(absolutePath, { encoding: "utf8" });
+  return parseEnvString(fileContents);
 }
 function loadEnv(testing = false) {
   const override = testing ? testingEnvFile : localEnvFile;
@@ -73,7 +76,9 @@ function loadEnv(testing = false) {
   }
   return env;
 }
+var __test__ = { parseEnvString, loadEnvFile };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
+  __test__,
   loadEnv
 });
