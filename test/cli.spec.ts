@@ -1,7 +1,6 @@
 import "should";
 import sinon from "sinon";
-import { afterEach, beforeEach, describe, it } from "vitest";
-import { type Options, parseArgs } from "../src/cli";
+import { type Options, parseArgs } from "../src/cli.ts";
 
 describe("parseArgs", () => {
   let exitStub: sinon.SinonStub;

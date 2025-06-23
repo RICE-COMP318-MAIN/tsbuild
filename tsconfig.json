@@ -16,6 +16,7 @@
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true,
     "useDefineForClassFields": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]

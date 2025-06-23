@@ -1,6 +1,5 @@
 import "should";
-import { describe, it } from "vitest";
-import { __test__ } from "../src/loadenv";
+import { __test__ } from "../src/loadenv.ts";
 
 const { parseEnvString } = __test__;
 
