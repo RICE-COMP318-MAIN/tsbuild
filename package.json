@@ -30,10 +30,10 @@
     "@types/istanbul-lib-instrument": "^1.7.7",
     "@types/mime": "^3.0.4",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.0.1",
+    "@types/node": "^24.0.4",
     "@types/sinon": "^17.0.4",
     "mime": "^4.0.7",
-    "mocha": "^11.7.0",
+    "mocha": "^11.7.1",
     "should": "^13.2.3",
     "sinon": "^21.0.0",
     "typescript": "^5.8.3"
