@@ -98,33 +98,26 @@ async function builder(options: Options): Promise<void> {
       console.log("Build complete");
       break;
     }
+
     case "serve": {
-      // Need live reload, use dev server.
-      const ctx: BuildContext = await context({
-        ...baseConfig,
-      });
-      await serve(dist, options.port, ctx, resolvedCopyPairs);
-      break;
-    }
-    case "profile": {
-      // Need to remove previous profiling information.
-      const nycDir = resolve(process.cwd(), ".nyc_output");
-      if (existsSync(nycDir)) {
-        await rm(nycDir, { recursive: true, force: true });
-      }
-      const covDir = resolve(process.cwd(), "coverage");
-      if (existsSync(covDir)) {
-        await rm(covDir, { recursive: true, force: true });
+      const esbuildConfig = { ...baseConfig };
+
+      if (options.profile) {
+        // Need to remove previous profiling information.
+        const nycDir = resolve(process.cwd(), ".nyc_output");
+        if (existsSync(nycDir)) {
+          await rm(nycDir, { recursive: true, force: true });
+        }
+        const covDir = resolve(process.cwd(), "coverage");
+        if (existsSync(covDir)) {
+          await rm(covDir, { recursive: true, force: true });
+        }
+
+        esbuildConfig.plugins = [IstanbulPlugin];
       }
 
-      // Don't need live reload, just use esbuild's server.
-      await copyAllAssets(resolvedCopyPairs);
-      const ctx: BuildContext = await context({
-        ...baseConfig,
-        plugins: [IstanbulPlugin],
-      });
-      await ctx.serve({ servedir: dist, port: options.port });
-      console.log(`Serving profiled app on http://localhost:${options.port}`);
+      const ctx: BuildContext = await context(esbuildConfig);
+      await serve(dist, options.port, ctx, resolvedCopyPairs, options.watch);
       break;
     }
   }

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import chokidar from "chokidar";
+import { type FSWatcher, watch } from "chokidar";
 import type { BuildContext } from "esbuild";
 import mime from "mime";
 import { type CopyPair, copyAllAssets } from "./copyfiles";
@@ -70,6 +70,7 @@ export async function serve(
   port: number,
   ctx: BuildContext,
   copyPairs: Array<CopyPair>,
+  shouldWatch: boolean,
 ): Promise<void> {
   // Initial copy of assets
   await copyAllAssets(copyPairs);
@@ -81,7 +82,7 @@ export async function serve(
 
   // Start server
   const server = http.createServer((req, res) => {
-    if (req.url === "/__reload") {
+    if (shouldWatch && req.url === "/__reload") {
       return sseManager.handle(req, res);
     }
 
@@ -102,7 +103,7 @@ export async function serve(
       res.writeHead(200, { "Content-Type": contentType });
 
       // Inject reload script into HTML
-      if (filePath.endsWith("index.html")) {
+      if (shouldWatch && filePath.endsWith("index.html")) {
         const script = `
         <script>
           const es = new EventSource('/__reload');
@@ -117,43 +118,50 @@ export async function serve(
   });
 
   server.listen(port, () => {
-    console.log(`Serving (and watching) at http://localhost:${port}`);
+    console.log(
+      `Serving${shouldWatch ? " (and watching) " : " "}at http://localhost:${port}`,
+    );
   });
 
-  // --- Watch for static asset changes ---
-  const assetWatcher = chokidar.watch(
-    copyPairs.map((pair) => pair.from),
-    { ignoreInitial: true },
-  );
+  let assetWatcher: FSWatcher | null = null;
+  let sourceWatcher: FSWatcher | null = null;
 
-  assetWatcher.on("all", async () => {
-    await copyAllAssets(copyPairs);
-    console.log("Assets copied");
-    sseManager.sendReload();
-  });
+  if (shouldWatch) {
+    // Watch for static asset changes
+    assetWatcher = watch(
+      copyPairs.map((pair) => pair.from),
+      { ignoreInitial: true },
+    );
 
-  // --- Watch for source changes ---
-  const rebuild = async () => {
-    try {
-      await ctx.rebuild();
-      console.log("Rebuilt source");
+    assetWatcher.on("all", async () => {
+      await copyAllAssets(copyPairs);
+      console.log("Assets copied");
       sseManager.sendReload();
-    } catch (err) {
-      console.error("Build error:", err);
-    }
-  };
+    });
 
-  const sourceWatcher = chokidar.watch("src", {
-    ignoreInitial: true,
-  });
+    // Watch for source changes
+    const rebuild = async () => {
+      try {
+        await ctx.rebuild();
+        console.log("Rebuilt source");
+        sseManager.sendReload();
+      } catch (err) {
+        console.error("Build error:", err);
+      }
+    };
 
-  sourceWatcher.on("all", rebuild);
+    sourceWatcher = watch("src", {
+      ignoreInitial: true,
+    });
+
+    sourceWatcher.on("all", rebuild);
+  }
 
   // Close watchers and clients on exit
   process.on("SIGINT", () => {
     console.log("\nShutting down...");
-    assetWatcher.close();
-    sourceWatcher.close();
+    assetWatcher?.close();
+    sourceWatcher?.close();
     sseManager.closeAll();
     server.close(() => process.exit(0));
   });

@@ -4,7 +4,7 @@ import type { CopyPair } from "./copyfiles";
 //   build: Build the application
 //   serve: Serve the application with live reload
 //   profile: Serve the application with Istanbul code coverage
-const validModes = ["build", "serve", "profile"] as const;
+const validModes = ["build", "serve"] as const;
 type BuildMode = (typeof validModes)[number];
 
 // Command line options.
@@ -15,6 +15,8 @@ export type Options = {
   entry: string; // Entry file for the application
   output: string; // Output file (relative to output directory)
   testing: boolean; // Whether to run in test mode (loads test environment)
+  watch: boolean; // Whether to watch for changes and rebuild
+  profile: boolean; // Whether to run in profile mode (for code coverage)
   copy?: Array<CopyPair>; // Array of copy pairs for static assets
 };
 
@@ -26,6 +28,8 @@ const defaultOptions: Options = {
   entry: "src/main.ts", // Default entry file
   output: "main.js", // Default output file
   testing: false, // Default to not running in test mode
+  watch: false, // Default to not watching for changes
+  profile: false, // Default to not running in profile mode
 };
 
 function usage(name: string) {
@@ -48,8 +52,10 @@ Options:
   -o, --output <file>     Output file (relative to output directory) (default: ${
     defaultOptions.output
   })
+  -t, --testing           Run in test mode (loads test environment) (default: ${defaultOptions.testing})
+  -w, --watch             Watch for changes and rebuild (default: ${defaultOptions.watch})
+  --profile               Run in profile mode (for code coverage) (default: ${defaultOptions.profile})
   -c, --copy <from:to>    Copy pairs in the format 'from:to'. Can be specified multiple times.
-  -t, --testing           Run in test mode (loads test environment)
   -h, --help              Show this help message
 `);
 }
@@ -161,6 +167,17 @@ export function parseArgs(argv: string[]): Options {
       case "-t":
       case "--testing": {
         opts.testing = true;
+        break;
+      }
+
+      case "-w":
+      case "--watch": {
+        opts.watch = true;
+        break;
+      }
+
+      case "--profile": {
+        opts.profile = true;
         break;
       }
 

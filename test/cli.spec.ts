@@ -23,6 +23,8 @@ describe("parseArgs", () => {
     entry: "src/main.ts",
     output: "main.js",
     testing: false,
+    watch: false,
+    profile: false,
     copy: [],
   };
 
@@ -66,6 +68,16 @@ describe("parseArgs", () => {
       description: "set testing flag with -t",
       argv: ["node", "build318", "-t"],
       expected: { ...defaultOpts, testing: true },
+    },
+    {
+      description: "set watch flag with -w",
+      argv: ["node", "build318", "-w"],
+      expected: { ...defaultOpts, watch: true },
+    },
+    {
+      description: "set profile flag with --profile",
+      argv: ["node", "build318", "--profile"],
+      expected: { ...defaultOpts, profile: true },
     },
     {
       description: "set single copy pair",

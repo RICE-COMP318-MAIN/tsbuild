@@ -30,7 +30,7 @@ var import_node_path4 = require("node:path");
 var import_esbuild2 = require("esbuild");
 
 // src/cli.ts
-var validModes = ["build", "serve", "profile"];
+var validModes = ["build", "serve"];
 var defaultOptions = {
   mode: "build",
   // Default mode
@@ -42,8 +42,12 @@ var defaultOptions = {
   // Default entry file
   output: "main.js",
   // Default output file
-  testing: false
+  testing: false,
   // Default to not running in test mode
+  watch: false,
+  // Default to not watching for changes
+  profile: false
+  // Default to not running in profile mode
 };
 function usage(name) {
   console.log(`
@@ -61,8 +65,10 @@ Options:
   -d, --dist <path>       Output directory (default: ${defaultOptions.dist})
   -e, --entry <path>      Entry file (default: ${defaultOptions.entry})
   -o, --output <file>     Output file (relative to output directory) (default: ${defaultOptions.output})
+  -t, --testing           Run in test mode (loads test environment) (default: ${defaultOptions.testing})
+  -w, --watch             Watch for changes and rebuild (default: ${defaultOptions.watch})
+  --profile               Run in profile mode (for code coverage) (default: ${defaultOptions.profile})
   -c, --copy <from:to>    Copy pairs in the format 'from:to'. Can be specified multiple times.
-  -t, --testing           Run in test mode (loads test environment)
   -h, --help              Show this help message
 `);
 }
@@ -157,6 +163,15 @@ function parseArgs(argv) {
       case "-t":
       case "--testing": {
         opts.testing = true;
+        break;
+      }
+      case "-w":
+      case "--watch": {
+        opts.watch = true;
+        break;
+      }
+      case "--profile": {
+        opts.profile = true;
         break;
       }
       case "-h":
@@ -289,7 +304,7 @@ function loadEnv(testing = false) {
 var import_node_fs2 = __toESM(require("node:fs"));
 var import_node_http = __toESM(require("node:http"));
 var import_node_path3 = __toESM(require("node:path"));
-var import_chokidar = __toESM(require("chokidar"));
+var import_chokidar = require("chokidar");
 
 // node_modules/mime/dist/types/other.js
 var types = {
@@ -1507,12 +1522,12 @@ var SSEManager = class {
     this.clients = [];
   }
 };
-async function serve(root, port, ctx, copyPairs) {
+async function serve(root, port, ctx, copyPairs, shouldWatch) {
   await copyAllAssets(copyPairs);
   await ctx.rebuild();
   const sseManager = new SSEManager();
   const server = import_node_http.default.createServer((req, res) => {
-    if (req.url === "/__reload") {
+    if (shouldWatch && req.url === "/__reload") {
       return sseManager.handle(req, res);
     }
     const url = req.url ?? "/";
@@ -1528,7 +1543,7 @@ async function serve(root, port, ctx, copyPairs) {
       }
       const contentType = src_default.getType(filePath) || "application/octet-stream";
       res.writeHead(200, { "Content-Type": contentType });
-      if (filePath.endsWith("index.html")) {
+      if (shouldWatch && filePath.endsWith("index.html")) {
         const script = `
         <script>
           const es = new EventSource('/__reload');
@@ -1542,34 +1557,40 @@ async function serve(root, port, ctx, copyPairs) {
     });
   });
   server.listen(port, () => {
-    console.log(`Serving (and watching) at http://localhost:${port}`);
+    console.log(
+      `Serving${shouldWatch ? " (and watching) " : " "}at http://localhost:${port}`
+    );
   });
-  const assetWatcher = import_chokidar.default.watch(
-    copyPairs.map((pair) => pair.from),
-    { ignoreInitial: true }
-  );
-  assetWatcher.on("all", async () => {
-    await copyAllAssets(copyPairs);
-    console.log("Assets copied");
-    sseManager.sendReload();
-  });
-  const rebuild = async () => {
-    try {
-      await ctx.rebuild();
-      console.log("Rebuilt source");
+  let assetWatcher = null;
+  let sourceWatcher = null;
+  if (shouldWatch) {
+    assetWatcher = (0, import_chokidar.watch)(
+      copyPairs.map((pair) => pair.from),
+      { ignoreInitial: true }
+    );
+    assetWatcher.on("all", async () => {
+      await copyAllAssets(copyPairs);
+      console.log("Assets copied");
       sseManager.sendReload();
-    } catch (err) {
-      console.error("Build error:", err);
-    }
-  };
-  const sourceWatcher = import_chokidar.default.watch("src", {
-    ignoreInitial: true
-  });
-  sourceWatcher.on("all", rebuild);
+    });
+    const rebuild = async () => {
+      try {
+        await ctx.rebuild();
+        console.log("Rebuilt source");
+        sseManager.sendReload();
+      } catch (err) {
+        console.error("Build error:", err);
+      }
+    };
+    sourceWatcher = (0, import_chokidar.watch)("src", {
+      ignoreInitial: true
+    });
+    sourceWatcher.on("all", rebuild);
+  }
   process.on("SIGINT", () => {
     console.log("\nShutting down...");
-    assetWatcher.close();
-    sourceWatcher.close();
+    assetWatcher?.close();
+    sourceWatcher?.close();
     sseManager.closeAll();
     server.close(() => process.exit(0));
   });
@@ -1615,28 +1636,20 @@ async function builder(options) {
       break;
     }
     case "serve": {
-      const ctx = await (0, import_esbuild2.context)({
-        ...baseConfig
-      });
-      await serve(dist, options.port, ctx, resolvedCopyPairs);
-      break;
-    }
-    case "profile": {
-      const nycDir = (0, import_node_path4.resolve)(process.cwd(), ".nyc_output");
-      if ((0, import_node_fs3.existsSync)(nycDir)) {
-        await (0, import_promises3.rm)(nycDir, { recursive: true, force: true });
+      const esbuildConfig = { ...baseConfig };
+      if (options.profile) {
+        const nycDir = (0, import_node_path4.resolve)(process.cwd(), ".nyc_output");
+        if ((0, import_node_fs3.existsSync)(nycDir)) {
+          await (0, import_promises3.rm)(nycDir, { recursive: true, force: true });
+        }
+        const covDir = (0, import_node_path4.resolve)(process.cwd(), "coverage");
+        if ((0, import_node_fs3.existsSync)(covDir)) {
+          await (0, import_promises3.rm)(covDir, { recursive: true, force: true });
+        }
+        esbuildConfig.plugins = [IstanbulPlugin];
       }
-      const covDir = (0, import_node_path4.resolve)(process.cwd(), "coverage");
-      if ((0, import_node_fs3.existsSync)(covDir)) {
-        await (0, import_promises3.rm)(covDir, { recursive: true, force: true });
-      }
-      await copyAllAssets(resolvedCopyPairs);
-      const ctx = await (0, import_esbuild2.context)({
-        ...baseConfig,
-        plugins: [IstanbulPlugin]
-      });
-      await ctx.serve({ servedir: dist, port: options.port });
-      console.log(`Serving profiled app on http://localhost:${options.port}`);
+      const ctx = await (0, import_esbuild2.context)(esbuildConfig);
+      await serve(dist, options.port, ctx, resolvedCopyPairs, options.watch);
       break;
     }
   }
