@@ -76,7 +76,7 @@ async function builder(options: Options): Promise<void> {
   }
 
   // Base esbuild configuration.
-  const baseConfig: BuildOptions = {
+  const esbuildConfig: BuildOptions = {
     entryPoints: [options.entry],
     bundle: true,
     sourcemap: "inline",
@@ -89,33 +89,31 @@ async function builder(options: Options): Promise<void> {
   const dist = resolve(cwd, options.dist);
   const resolvedCopyPairs = resolvePairs(options.copy || [], cwd, dist);
 
+  // Setup profiling.
+  if (options.profile) {
+    // Need to remove previous profiling information.
+    const nycDir = resolve(process.cwd(), ".nyc_output");
+    if (existsSync(nycDir)) {
+      await rm(nycDir, { recursive: true, force: true });
+    }
+    const covDir = resolve(process.cwd(), "coverage");
+    if (existsSync(covDir)) {
+      await rm(covDir, { recursive: true, force: true });
+    }
+
+    // Add Istanbul plugin for code coverage instrumentation.
+    esbuildConfig.plugins = [IstanbulPlugin];
+  }
+
   switch (options.mode) {
     case "build": {
       await copyAllAssets(resolvedCopyPairs);
-      await build({
-        ...baseConfig,
-      });
+      await build(esbuildConfig);
       console.log("Build complete");
       break;
     }
 
     case "serve": {
-      const esbuildConfig = { ...baseConfig };
-
-      if (options.profile) {
-        // Need to remove previous profiling information.
-        const nycDir = resolve(process.cwd(), ".nyc_output");
-        if (existsSync(nycDir)) {
-          await rm(nycDir, { recursive: true, force: true });
-        }
-        const covDir = resolve(process.cwd(), "coverage");
-        if (existsSync(covDir)) {
-          await rm(covDir, { recursive: true, force: true });
-        }
-
-        esbuildConfig.plugins = [IstanbulPlugin];
-      }
-
       const ctx: BuildContext = await context(esbuildConfig);
       await serve(dist, options.port, ctx, resolvedCopyPairs, options.watch);
       break;

@@ -63,6 +63,8 @@ class SSEManager {
  * changes.
  * @param {Array<CopyPair>} copyPairs - Array of asset copy pairs to watch and
  * copy.
+ * @param {boolean} shouldWatch - Whether to enable live reload and file
+ * watching.
  * @returns {Promise<void>} A promise that resolves when the server is running.
  */
 export async function serve(
@@ -102,8 +104,8 @@ export async function serve(
       const contentType = mime.getType(filePath) || "application/octet-stream";
       res.writeHead(200, { "Content-Type": contentType });
 
-      // Inject reload script into HTML
       if (shouldWatch && filePath.endsWith("index.html")) {
+        // Inject reload script into HTML
         const script = `
         <script>
           const es = new EventSource('/__reload');
@@ -157,12 +159,19 @@ export async function serve(
     sourceWatcher.on("all", rebuild);
   }
 
-  // Close watchers and clients on exit
+  // Handle server shutdown gracefully.
   process.on("SIGINT", () => {
     console.log("\nShutting down...");
-    assetWatcher?.close();
-    sourceWatcher?.close();
-    sseManager.closeAll();
     server.close(() => process.exit(0));
+  });
+
+  // Close watchers and clients on close and then resolve the returned promise.
+  return new Promise((resolve) => {
+    server.on("close", () => {
+      assetWatcher?.close();
+      sourceWatcher?.close();
+      sseManager.closeAll();
+      resolve();
+    });
   });
 }
